@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IELTS News</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; line-height: 1.6; }
+    article { border-bottom: 2px solid #ccc; padding-bottom: 20px; margin-bottom: 20px; }
+    h2 { font-size: 1.2em; }
+    
+    .meaning { background: #ccc; color: #ccc; cursor: pointer; padding: 0 4px; }
+    .meaning.revealed { background: transparent; color: #333; }
+  </style>
+</head>
+<body>
+  <h1>IELTS News</h1>
+
+  <% @articles.each do |article| %>
+    <article>
+      <h2><%= article['headline'] %></h2>
+      <p><%= article['ielts_summary'].gsub("\n", "<br>") %></p>
+
+      <ul>
+        <% JSON.parse(article['vocab_list'] || "[]").each do |vocab| %>
+          <li>
+            <strong><%= vocab['word'] %></strong> : 
+            <span class="meaning" onclick="this.classList.toggle('revealed')"><%= vocab['meaning'] %></span>
+          </li>
+        <% end %>
+      </ul>
+
+      <details>
+        <summary>日本語の背景と問い</summary>
+        <p><%= article['japanese_context'] %></p>
+        <p><strong>Q: </strong><%= article['semantic_question'] %></p>
+      </details>
+    </article>
+  <% end %>
+</body>
+</html>
