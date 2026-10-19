@@ -2,40 +2,110 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IELTS News</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Global Insight & English</title>
   <style>
-    body { font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; line-height: 1.6; }
-    article { border-bottom: 2px solid #ccc; padding-bottom: 20px; margin-bottom: 20px; }
-    h2 { font-size: 1.2em; }
+    body { margin: 0; padding: 0; background-color: #0f172a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
+    .header { padding: 15px; text-align: center; font-size: 1.2rem; font-weight: bold; color: #38bdf8; border-bottom: 1px solid #1e293b; background: #0f172a; z-index: 10; }
     
-    .meaning { background: #ccc; color: #ccc; cursor: pointer; padding: 0 4px; }
-    .meaning.revealed { background: transparent; color: #333; }
+    #card-container { flex: 1; position: relative; width: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    
+    .card { position: absolute; width: 90%; max-width: 500px; max-height: 85vh; overflow-y: auto; background: #1e293b; border-radius: 16px; padding: 25px; box-sizing: border-box; box-shadow: 0 10px 25px rgba(0,0,0,0.5); transition: transform 0.4s ease, opacity 0.4s ease; opacity: 0; transform: scale(0.9) translateY(30px); pointer-events: none; border: 1px solid #334155; }
+    .card.active { opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; }
+    .card.swiped { opacity: 0; transform: scale(0.9) translateY(-100px); }
+    
+    .headline { font-size: 1.3rem; font-weight: 800; line-height: 1.4; margin-bottom: 12px; color: #ffffff; }
+    .summary { font-size: 1rem; color: #94a3b8; margin-bottom: 20px; line-height: 1.6; }
+    
+    .vocab-list { margin-bottom: 25px; display: flex; flex-direction: column; gap: 10px; }
+    .vocab-item { background: #0f172a; padding: 12px 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #334155; }
+    .vocab-word { font-weight: bold; font-size: 1.1rem; color: #facc15; }
+    .vocab-meaning { background: #334155; color: transparent; padding: 5px 12px; border-radius: 6px; cursor: pointer; user-select: none; transition: all 0.2s; font-size: 0.95rem; font-weight: bold; }
+    .vocab-meaning.revealed { background: #38bdf8; color: #0f172a; }
+
+    .context-box { background: #020617; border-left: 4px solid #10b981; border-radius: 8px; margin-bottom: 20px; overflow: hidden; }
+    .context-title { padding: 15px; font-weight: bold; color: #10b981; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; }
+    .context-title::after { content: '▼'; font-size: 0.8rem; transition: transform 0.3s; }
+    .context-title.open::after { transform: rotate(180deg); }
+    .context-body { padding: 0 15px 15px 15px; color: #cbd5e1; font-size: 0.95rem; line-height: 1.7; display: none; }
+    .context-body.open { display: block; animation: fadeIn 0.3s; }
+    .question { margin-top: 15px; padding-top: 15px; border-top: 1px dashed #334155; color: #f472b6; font-weight: bold; }
+    
+    .next-btn { background: #38bdf8; color: #0f172a; border: none; padding: 16px; font-size: 1.2rem; font-weight: bold; border-radius: 12px; cursor: pointer; width: 100%; display: block; transition: transform 0.1s; }
+    .next-btn:active { transform: scale(0.98); }
+    
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+    ::-webkit-scrollbar { display: none; } 
   </style>
 </head>
 <body>
-  <h1>IELTS News</h1>
+  <div class="header">🌍 Global Insight & English</div>
+  
+  <div id="card-container">
+    <% @articles.each_with_index do |article, index| %>
+      <div class="card <%= index == 0 ? 'active' : '' %>" id="card-<%= index %>">
+        <div class="headline"><%= article['headline'] %></div>
+        <div class="summary"><%= article['ielts_summary'].gsub("\n", "<br>") %></div>
+        
+        <div class="vocab-list">
+          <% JSON.parse(article['vocab_list'] || "[]").each do |vocab| %>
+            <div class="vocab-item">
+              <span class="vocab-word"><%= vocab['word'] %></span>
+              <span class="vocab-meaning" onclick="revealVocab(this)"><%= vocab['meaning'] %></span>
+            </div>
+          <% end %>
+        </div>
+        
+        <div class="context-box">
+          <div class="context-title" onclick="toggleContext(this)">💡 ゼロからわかる背景知識</div>
+          <div class="context-body">
+            <p><%= article['japanese_context'].gsub("\n", "<br>") %></p>
+            <div class="question">
+              🤔 考えるヒント：<br>
+              <span style="color: #e2e8f0; font-weight: normal;"><%= article['semantic_question'] %></span>
+            </div>
+          </div>
+        </div>
+        
+        <button class="next-btn" onclick="nextCard(<%= index %>)">Next Article ➔</button>
+      </div>
+    <% end %>
+  </div>
 
-  <% @articles.each do |article| %>
-    <article>
-      <h2><%= article['headline'] %></h2>
-      <p><%= article['ielts_summary'].gsub("\n", "<br>") %></p>
+  <script>
+    function revealVocab(el) {
+      if(!el.classList.contains('revealed')) {
+        el.classList.add('revealed');
+        if (navigator.vibrate) navigator.vibrate(20);
+      }
+    }
 
-      <ul>
-        <% JSON.parse(article['vocab_list'] || "[]").each do |vocab| %>
-          <li>
-            <strong><%= vocab['word'] %></strong> : 
-            <span class="meaning" onclick="this.classList.toggle('revealed')"><%= vocab['meaning'] %></span>
-          </li>
-        <% end %>
-      </ul>
-
-      <details>
-        <summary>日本語の背景と問い</summary>
-        <p><%= article['japanese_context'] %></p>
-        <p><strong>Q: </strong><%= article['semantic_question'] %></p>
-      </details>
-    </article>
-  <% end %>
+    function toggleContext(el) {
+      el.classList.toggle('open');
+      const body = el.nextElementSibling;
+      body.classList.toggle('open');
+      if (navigator.vibrate) navigator.vibrate(10);
+    }
+    
+    function nextCard(currentIndex) {
+      const currentCard = document.getElementById('card-' + currentIndex);
+      const nextCard = document.getElementById('card-' + (currentIndex + 1));
+      
+      currentCard.classList.remove('active');
+      currentCard.classList.add('swiped');
+      
+      if(nextCard) {
+        setTimeout(() => {
+          nextCard.classList.add('active');
+          nextCard.scrollTop = 0; 
+        }, 150);
+      } else {
+        currentCard.innerHTML = "<h2 style='text-align:center; color:#38bdf8;'>🎉 ALL DONE!</h2><p style='text-align:center;'>最新のニュースをチェックし終えました。</p>";
+        currentCard.classList.remove('swiped');
+        currentCard.classList.add('active');
+      }
+      if (navigator.vibrate) navigator.vibrate(30);
+    }
+  </script>
 </body>
 </html>
