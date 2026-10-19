@@ -1,17 +1,30 @@
 require 'nokogiri'
 require 'open-uri'
 
-def gets_news_text
+def get_article_links
   url = 'https://lite.cnn.com/'
   html = URI.open(url).read
   doc = Nokogiri::HTML(html)
   
-  first_link = doc.at_css('li a')['href']
-  article_url = "https://lite.cnn.com#{first_link}"
+  links = []
   
-  article_html = URI.open(article_url).read
-  article_doc = Nokogiri::HTML(article_html)
+  doc.css('li').each do |list_item|
+    a_tag = list_item.at_css('a')
+    
+    if a_tag && a_tag['href']
+      links << "https://lite.cnn.com#{a_tag['href']}"
+    end
+  end
   
-  article_doc.css('p').map(&:text).join("\n\n")
+  links
 end
 
+def get_article_text(article_url)
+  html = URI.open(article_url).read
+  doc = Nokogiri::HTML(html)
+  
+  doc.css('p').map(&:text).join("\n\n")
+rescue => e
+  puts "❌ 取得エラー (#{article_url}): #{e.message}"
+  nil
+end
